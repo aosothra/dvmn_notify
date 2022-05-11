@@ -5,9 +5,12 @@ import telegram
 from environs import Env
 
 
-def init_logger():
+def init_logger(verbose=False):
     log = logging.getLogger(__name__)
-    log.setLevel(logging.DEBUG)
+
+    log.setLevel(logging.WARNING)
+    if verbose:
+        log.setLevel(logging.DEBUG)
 
     terminal_handler = logging.StreamHandler()
     terminal_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -29,7 +32,7 @@ def main():
     env = Env()
     env.read_env()
 
-    init_logger()
+    init_logger(verbose=env.bool('VERBOSE', False))
     log = logging.getLogger(__name__)
 
     bot = telegram.Bot(env('TG_BOT_TOKEN'))
@@ -60,7 +63,7 @@ def main():
             log.info('No updates from server. Keep polling...')
             params = {'timestamp': response_data['timestamp_to_request']}
         elif response_data['status'] == 'found':
-            log.info('New Update from server:', response_data)
+            log.info('New update from server! Sending notification over telegram.')
 
             for attempt in response_data['new_attempts']:
                 send_bot_notification(
