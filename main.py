@@ -5,9 +5,6 @@ import telegram
 from environs import Env
 
 
-bot = None
-env = Env()
-
 def init_logger():
     log = logging.getLogger(__name__)
     log.setLevel(logging.DEBUG)
@@ -29,6 +26,7 @@ def send_bot_notification(bot, chat_id, lesson_title, lesson_url, is_negative):
 
 
 def main():
+    env = Env()
     env.read_env()
 
     init_logger()
@@ -63,7 +61,7 @@ def main():
             params = {'timestamp': response_data['timestamp_to_request']}
         elif response_data['status'] == 'found':
             log.info('New Update from server:', response_data)
-            log.info('Keep polling...')
+
             for attempt in response_data['new_attempts']:
                 send_bot_notification(
                     bot,
@@ -73,8 +71,12 @@ def main():
                     attempt['is_negative']
                     )
             params = {'timestamp': response_data['last_attempt_timestamp'] + 0.001}
+
+            log.info('Keep polling...')
         else:
-            pass
+            log.warning(f'Response status {response_data["status"]} is not accounted for.')
+            params = None
+            log.info('Keep polling...')
 
 if __name__ == '__main__':
     main()
