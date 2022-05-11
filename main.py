@@ -1,8 +1,12 @@
 import logging
 import requests
+import telegram
 
 from environs import Env
 
+
+bot = None
+env = Env()
 
 def init_logger():
     log = logging.getLogger(__name__)
@@ -15,18 +19,29 @@ def init_logger():
     log.addHandler(terminal_handler)
 
 
+def send_bot_notification(bot, chat_id, lesson_title, lesson_url, is_negative):
+    text = (
+        f"На нашу работу по уроку '{lesson_title}' пришли замечания.\n{lesson_url}"
+        if is_negative else
+        f"Наша работа по уроку '{lesson_title}' принята без замечаний.\n{lesson_url}"
+    )
+    bot.send_message(chat_id=chat_id, text=text)
+
+
 def main():
-    env = Env()
     env.read_env()
 
     init_logger()
     log = logging.getLogger(__name__)
 
-    token = env('DVMN_API_TOKEN')
+    bot = telegram.Bot(env('TG_BOT_TOKEN'))
+    chat_id = env.int('TG_CHAT_ID')
+
+    dvmn_api_token = env('DVMN_API_TOKEN')    
 
     url = 'https://dvmn.org/api/long_polling/'
     headers = {
-        'Authorization': f'Token {token}'
+        'Authorization': f'Token {dvmn_api_token}'
     }
     params = None
 
@@ -46,10 +61,20 @@ def main():
         if response_data['status'] == 'timeout':
             log.info('No updates from server. Keep polling...')
             params = {'timestamp': response_data['timestamp_to_request']}
-        else:
+        elif response_data['status'] == 'found':
             log.info('New Update from server:', response_data)
             log.info('Keep polling...')
+            for attempt in response_data['new_attempts']:
+                send_bot_notification(
+                    bot,
+                    chat_id,
+                    attempt['lesson_title'],
+                    attempt['lesson_url'],
+                    attempt['is_negative']
+                    )
             params = {'timestamp': response_data['last_attempt_timestamp'] + 0.001}
+        else:
+            pass
 
 if __name__ == '__main__':
     main()
