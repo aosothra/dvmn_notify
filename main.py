@@ -19,15 +19,6 @@ def init_logger(name, verbose=False):
     log.addHandler(terminal_handler)
 
 
-def send_bot_notification(bot, chat_id, lesson_title, lesson_url, is_negative):
-    text = (
-        f"На нашу работу по уроку '{lesson_title}' пришли замечания.\n{lesson_url}"
-        if is_negative else
-        f"Наша работа по уроку '{lesson_title}' принята без замечаний.\n{lesson_url}"
-    )
-    bot.send_message(chat_id=chat_id, text=text)
-
-
 def main():
     env = Env()
     env.read_env()
@@ -66,13 +57,12 @@ def main():
             log.info('New update from server! Sending notification over telegram.')
 
             for attempt in review_data['new_attempts']:
-                send_bot_notification(
-                    bot,
-                    chat_id,
-                    attempt['lesson_title'],
-                    attempt['lesson_url'],
-                    attempt['is_negative']
+                text = (
+                        f"На нашу работу по уроку '{attempt['lesson_title']}' пришли замечания.\n{attempt['lesson_url']}"
+                        if attempt['is_negative'] else
+                        f"Наша работа по уроку '{attempt['lesson_title']}' принята без замечаний.\n{attempt['lesson_url']}"
                     )
+                bot.send_message(chat_id=chat_id, text=text)
             params = {'timestamp': review_data['last_attempt_timestamp'] + 0.001}
 
             log.info('Keep polling...')
@@ -80,6 +70,7 @@ def main():
             log.warning(f'Response status {review_data["status"]} is not accounted for.')
             params = None
             log.info('Keep polling...')
+
 
 if __name__ == '__main__':
     main()
