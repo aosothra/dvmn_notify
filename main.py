@@ -5,8 +5,8 @@ import telegram
 from environs import Env
 
 
-def init_logger(verbose=False):
-    log = logging.getLogger(__name__)
+def init_logger(name, verbose=False):
+    log = logging.getLogger(name)
 
     log.setLevel(logging.WARNING)
     if verbose:
@@ -32,7 +32,7 @@ def main():
     env = Env()
     env.read_env()
 
-    init_logger(verbose=env.bool('VERBOSE', False))
+    init_logger(__name__, verbose=env.bool('VERBOSE', False))
     log = logging.getLogger(__name__)
 
     bot = telegram.Bot(env('TG_BOT_TOKEN'))
