@@ -58,14 +58,14 @@ def main():
             log.warning('Failed to connect. Keep polling...')
             continue
 
-        response_data = response.json()
-        if response_data['status'] == 'timeout':
+        review_data = response.json()
+        if review_data['status'] == 'timeout':
             log.info('No updates from server. Keep polling...')
-            params = {'timestamp': response_data['timestamp_to_request']}
-        elif response_data['status'] == 'found':
+            params = {'timestamp': review_data['timestamp_to_request']}
+        elif review_data['status'] == 'found':
             log.info('New update from server! Sending notification over telegram.')
 
-            for attempt in response_data['new_attempts']:
+            for attempt in review_data['new_attempts']:
                 send_bot_notification(
                     bot,
                     chat_id,
@@ -73,11 +73,11 @@ def main():
                     attempt['lesson_url'],
                     attempt['is_negative']
                     )
-            params = {'timestamp': response_data['last_attempt_timestamp'] + 0.001}
+            params = {'timestamp': review_data['last_attempt_timestamp'] + 0.001}
 
             log.info('Keep polling...')
         else:
-            log.warning(f'Response status {response_data["status"]} is not accounted for.')
+            log.warning(f'Response status {review_data["status"]} is not accounted for.')
             params = None
             log.info('Keep polling...')
 
