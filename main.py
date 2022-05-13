@@ -5,26 +5,16 @@ import telegram
 from environs import Env
 
 
-def init_logger(name, verbose=False):
-    log = logging.getLogger(name)
-
-    log.setLevel(logging.WARNING)
-    if verbose:
-        log.setLevel(logging.DEBUG)
-
-    terminal_handler = logging.StreamHandler()
-    terminal_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    terminal_handler.setFormatter(terminal_formatter)
-
-    log.addHandler(terminal_handler)
+log = logging.getLogger(__file__)
 
 
 def main():
     env = Env()
     env.read_env()
 
-    init_logger(__name__, verbose=env.bool('VERBOSE', False))
-    log = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.WARNING)
+    if env.bool('VERBOSE', False):
+        log.setLevel(logging.DEBUG)
 
     bot = telegram.Bot(env('TG_BOT_TOKEN'))
     chat_id = env.int('TG_CHAT_ID')
