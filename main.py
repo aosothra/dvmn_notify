@@ -9,29 +9,43 @@ log = logging.getLogger(__file__)
 
 
 class TelegramLogHandler(logging.Handler):
-    def __init__(self, bot_token, chat_id):
+    def __init__(self, bot, chat_id):
         super().__init__()
-        self.bot = telegram.Bot(bot_token)
+        self.bot = bot
         self.chat_id = chat_id
-    
+
+    @classmethod
+    def using_token(cls, bot_token, chat_id):
+        '''Init separate bot instance for logger'''
+
+        bot = telegram.Bot(bot_token)
+        return cls(bot, chat_id)
+
     def emit(self, record):
         log_entry = self.format(record)
+
         self.bot.send_message(
             chat_id=self.chat_id,
             text=log_entry
         )
+    
 
 
 def main():
     env = Env()
     env.read_env()
+    chat_id = env.int('TG_CHAT_ID')
 
     logging.basicConfig(level=logging.INFO)
     if env.bool('VERBOSE', False):
         log.setLevel(logging.DEBUG)
+
+    bot = telegram.Bot(env('TG_BOT_TOKEN'))
+
     log.addHandler(
-        TelegramLogHandler(env('TG_BOT_TOKEN'), env.int('TG_CHAT_ID'))
+        TelegramLogHandler(bot, chat_id)
     )
+
 
     dvmn_api_token = env('DVMN_API_TOKEN')    
 
@@ -60,14 +74,20 @@ def main():
                             if attempt['is_negative'] else
                             f"Our submission to lesson '{attempt['lesson_title']}' was accepted with no remarks!\n{attempt['lesson_url']}"
                         )
-                    log.info(notification)
+                    bot.send_message(
+                        chat_id=chat_id,
+                        text=notification
+                    )
                 params = {'timestamp': review_data['last_attempt_timestamp'] + 0.001}
 
                 log.debug('Keep polling...')
             else:
                 log.debug(f'Response status {review_data["status"]} is not accounted for. Keep polling...')
                 params = None
-
+        except requests.exceptions.ReadTimeout:
+            log.warning('Request timed out. Keep polling...')
+        except requests.exceptions.ConnectionError:
+            log.warning('Failed to connect. Keep polling...')
         except Exception:
             log.exception("An exception encountered while running.")
 
