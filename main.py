@@ -1,4 +1,5 @@
 import logging
+import time
 import requests
 import telegram
 
@@ -13,13 +14,6 @@ class TelegramLogHandler(logging.Handler):
         super().__init__()
         self.bot = bot
         self.chat_id = chat_id
-
-    @classmethod
-    def using_token(cls, bot_token, chat_id):
-        '''Init separate bot instance for logger'''
-
-        bot = telegram.Bot(bot_token)
-        return cls(bot, chat_id)
 
     def emit(self, record):
         log_entry = self.format(record)
@@ -87,7 +81,9 @@ def main():
         except requests.exceptions.ReadTimeout:
             log.warning('Request timed out. Keep polling...')
         except requests.exceptions.ConnectionError:
-            log.warning('Failed to connect. Keep polling...')
+            log.warning('Failed to connect. Next attempt in 90s.')
+            time.sleep(90)
+            log.debug('Resume polling...')
         except Exception:
             log.exception("An exception encountered while running.")
 
