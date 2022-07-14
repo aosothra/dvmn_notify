@@ -33,6 +33,27 @@ py main.py
 
 Once run, this script will keep polling dvmn API indefinitely. Flag `VERBOSE` as `True` if you want to see execution details. Upon update from the server, the script will send a Telegram message to the specified chat with a notification.
 
+## Bulding image and running as a container
+
+This project contains `Dockerfile` which lets you create docker image and run your python application as a container.
+
+Make sure you have docker [installed](https://docs.docker.com/get-started/#download-and-install-docker).
+
+```sh
+docker --version
+```
+
+From `root` of your cloned repo build an image using following command:
+```sh
+docker build --tag dvmn-notify .
+```
+
+Once the process is complete, you can run it as a detached container. Make sure you've set up your `.env` file as described above, and run following command:
+
+```sh
+docker run -dp 80:80 --env-file .env dvmn-notify
+```
+
 ### Project goals
 
 This project was created for educational purposes as part of [dvmn.org](https://dvmn.org/) Backend Developer course.
